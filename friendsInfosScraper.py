@@ -18,7 +18,7 @@ BASICFACEBOOK_URL=""
 DRIVER_NAME="chromedriver.exe"
 FRIENDS_HTML=os.getcwd() + '/' + "friends.html"
 
-DRIVER_DIR=os.path.join(os.getcwd()+"\\FacebookFriendsInfos\\src\\",DRIVER_NAME)
+DRIVER_DIR=os.path.join(os.getcwd()+"\\",DRIVER_NAME)
 
 timeout = 5
 

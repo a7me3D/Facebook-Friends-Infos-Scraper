@@ -10,17 +10,17 @@ from lxml import html,etree
 import getpass
 import json, time, os, csv
 
-from io import BytesIO
 
 
 MFACEBOOK_URL="https://m.facebook.com/"
-BASICFACEBOOK_URL=""
-DRIVER_NAME="chromedriver.exe"
+FACEBOOK_PROFILE_URL='https://mbasic.facebook.com/profile.php?v=info&id='
+
 FRIENDS_HTML=os.getcwd() + '/' + "friends.html"
 
+DRIVER_NAME="chromedriver.exe"
 DRIVER_DIR=os.path.join(os.getcwd()+"\\",DRIVER_NAME)
 
-timeout = 5
+TIMEOUT = 5
 
 
 def setup_driver(dir_driver):
@@ -126,7 +126,7 @@ def get_friend_info(driver,friend):
         "current_city":""
     }
 
-    driver.get('https://mbasic.facebook.com/profile.php?v=info&id='+str(friendId))    
+    driver.get(FACEBOOK_PROFILE_URL+str(friendId))    
     source_page = html.fromstring(driver.page_source)
 
     work = get_work(source_page)

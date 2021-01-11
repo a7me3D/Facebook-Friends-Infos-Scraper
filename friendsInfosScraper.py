@@ -42,16 +42,9 @@ def signin(driver):
     fb_pass = getpass.getpass(prompt='enter your fb password: ') 
     driver.get(MFACEBOOK_URL)
     time.sleep(5)
-    # email_present = EC.presence_of_element_located((By.ID, 'm_login_email'))
-    # WebDriverWait(driver, timeout).until(email_present)
-    email_id = driver.find_element_by_id("m_login_email")
 
-    # pass_present = EC.presence_of_element_located((By.ID, 'm_login_password'))
-    # WebDriverWait(driver, timeout).until(pass_present)
+    email_id = driver.find_element_by_id("m_login_email")
     pass_id = driver.find_element_by_id("m_login_password")
-    
-    # pass_present = EC.presence_of_element_located((By.ID, 'login'))
-    # WebDriverWait(driver, timeout).until(pass_present)
     confirm_id = driver.find_element_by_name("login")
     
     email_id.send_keys(fb_login)
@@ -151,8 +144,7 @@ if __name__ == "__main__":
                 info=get_friend_info(driver,friend)
                 writer.writerow(info)
                 print(f"\n>> Writing {friend['friendName']} 's infos")
-                print(f"  info ")
-                time.sleep(12)
+                time.sleep(30)
             print(f"\n>> Completed! \n Saved to friendsInfo.csv")
 
         driver.close()

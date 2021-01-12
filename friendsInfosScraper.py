@@ -8,7 +8,8 @@ from selenium.common.exceptions import TimeoutException
 
 from lxml import html,etree
 import getpass
-import json, time, os, csv
+import json, time, os, csv, pickle
+from sys import exit
 
 
 
@@ -18,7 +19,7 @@ FACEBOOK_PROFILE_URL='https://mbasic.facebook.com/profile.php?v=info&id='
 FRIENDS_HTML=os.getcwd() + '/' + "friends.html"
 
 DRIVER_NAME="chromedriver.exe"
-DRIVER_DIR=os.path.join(os.getcwd()+"\\",DRIVER_NAME)
+DRIVER_DIR=os.path.join(os.getcwd(),DRIVER_NAME)
 
 TIMEOUT = 5
 
@@ -131,23 +132,55 @@ def get_friend_info(driver,friend):
     return(infos)
 
 
+def load_parsed_friends():
+    with open('parsed.pkl', 'rb') as f:
+        parsed_ids = pickle.load(f)
+    return parsed_ids
+
+def save_parsed_friends(ids_list):
+    with open('parsed.pkl', 'wb+') as f:
+        pickle.dump(ids_list,f)
 
 if __name__ == "__main__":
     driver = setup_driver(DRIVER_NAME)
     if signin(driver):
         download_friends_list(driver, FRIENDS_HTML)
-        with open("friendsInfo.csv", 'w', encoding="utf-8", newline='') as f:
+        
+        ids_to_skip = load_parsed_friends()
+
+        with open("friendsInfo.csv", 'a', encoding="utf-8", newline='') as f:
             fnames = ['full_name', 'work','current_city']
             writer = csv.DictWriter(f, fieldnames=fnames)    
-            writer.writeheader()
-            for friend in get_friends_id(FRIENDS_HTML):
-                info=get_friend_info(driver,friend)
-                writer.writerow(info)
-                print(f"\n>> Writing {friend['friendName']} 's infos")
-                time.sleep(30)
-            print(f"\n>> Completed! \n Saved to friendsInfo.csv")
+            
+            if len(ids_to_skip) == 0:
+                writer.writeheader()
 
-        driver.close()
+            try:
+                for friend in get_friends_id(FRIENDS_HTML):
+                    if not(friend["friendId"] in ids_to_skip):
+                        
+                        ids_to_skip.append(friend["friendId"])
+                        
+                        info=get_friend_info(driver,friend)
+                        writer.writerow(info)
+                        print(f"\n>> Writing {friend['friendName']} 's infos \n (Ctrl+C to save your progress and exit)")
+                        
+                        time.sleep(30)
+                print(f"\n>> Completed! \n Saved to friendsInfo.csv")
+
+            except (KeyboardInterrupt, EOFError):
+                print(">>Progress saved")
+                
+            finally:
+                save_parsed_friends(ids_to_skip)
+                exit()
+
+
+
+
+
+            
+
 
 
 

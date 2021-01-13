@@ -8,7 +8,7 @@ from selenium.common.exceptions import TimeoutException
 
 from lxml import html,etree
 import getpass
-import json, time, os, csv, pickle
+import json, time, os, csv, pickle,argparse
 from sys import exit
 
 
@@ -120,8 +120,8 @@ def get_friend_info(driver,friend):
         "current_city":""
     }
 
-    driver.get(FACEBOOK_PROFILE_URL+str(friendId))  
-
+    driver.get(FACEBOOK_PROFILE_URL+str(friendId))   
+    
     try:
         work_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'work')))
     except TimeoutException:
@@ -133,7 +133,7 @@ def get_friend_info(driver,friend):
     except TimeoutException:
         print("City section didnt load \n please report the error")
         exit()
-
+ 
     source_page = html.fromstring(driver.page_source)
 
     work = get_work(source_page)
@@ -154,7 +154,21 @@ def save_parsed_friends(ids_list):
     with open('parsed.pkl', 'wb+') as f:
         pickle.dump(ids_list,f)
 
+def restart_progress():
+    save_parsed_friends([])
+    info_file=open("friendsInfo.csv","r+")
+    info_file.truncate(0)
+    info_file.close
+
 if __name__ == "__main__":
+
+    args = argparse.ArgumentParser()
+    args.add_argument("--restart", action="store_true", help="clear progress")
+    args = args.parse_args()
+    
+    if args.restart:
+        restart_progress()
+
     driver = setup_driver(DRIVER_NAME)
     if signin(driver):
         download_friends_list(driver, FRIENDS_HTML)

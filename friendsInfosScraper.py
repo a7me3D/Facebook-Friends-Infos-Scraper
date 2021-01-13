@@ -55,8 +55,8 @@ def signin(driver):
     print("Logging in automatically...")
 
     time.sleep(5)
-    if "login" in driver.title.lower():
-        print("login failed pls check your credentials and retry")
+    if driver.title =="Facebook - Log In or Sign Up":
+        print("Login failed pls check your credentials and retry")
         return False
 
     return True
@@ -120,7 +120,7 @@ def get_friend_info(driver,friend):
         "current_city":""
     }
 
-    driver.get(FACEBOOK_PROFILE_URL+str(friendId))    
+    driver.get(FACEBOOK_PROFILE_URL+str(friendId))  
     source_page = html.fromstring(driver.page_source)
 
     work = get_work(source_page)

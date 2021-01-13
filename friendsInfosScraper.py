@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-
+from selenium.common.exceptions import NoSuchElementException        
 
 from lxml import html,etree
 import getpass
@@ -121,26 +121,26 @@ def get_friend_info(driver,friend):
     }
 
     driver.get(FACEBOOK_PROFILE_URL+str(friendId))   
-    
+    source_page = html.fromstring(driver.page_source)
+
     try:
         work_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'work')))
+        work = get_work(source_page)
+        infos["work"]=work
+
     except TimeoutException:
-        print("work section didnt load \n please retry again or report the error")
-        exit()
+       pass
     
     try:
         city_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'living')))
+        current_city = get_current_city(source_page)
+        infos["current_city"]=current_city
+
     except TimeoutException:
-        print("City section didnt load \n please retry again or report the error")
-        exit()
+        pass
  
-    source_page = html.fromstring(driver.page_source)
 
-    work = get_work(source_page)
-    infos["work"]=(work)
-
-    current_city = get_current_city(source_page)
-    infos["current_city"]=current_city
+   
     
     return(infos)
 

@@ -98,7 +98,7 @@ def get_work(parse):
             friend_work.append(work)
         except:
             pass
-    return friend_work
+    return ", ".join(friend_work)
 
 def get_current_city(parse):
     current_city=""

@@ -125,13 +125,13 @@ def get_friend_info(driver,friend):
     try:
         work_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'work')))
     except TimeoutException:
-        print("work section didnt load \n please report the error")
+        print("work section didnt load \n please retry again or report the error")
         exit()
     
     try:
         city_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'living')))
     except TimeoutException:
-        print("City section didnt load \n please report the error")
+        print("City section didnt load \n please retry again or report the error")
         exit()
  
     source_page = html.fromstring(driver.page_source)

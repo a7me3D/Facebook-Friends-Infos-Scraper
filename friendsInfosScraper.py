@@ -220,6 +220,7 @@ if __name__ == "__main__":
                         if info != False:
                             ids_to_skip.append(friend["friendId"])
                             writer.writerow(info)
+                        else:    
                             print("Skipped!")
                         
                         #Generate random sleep time

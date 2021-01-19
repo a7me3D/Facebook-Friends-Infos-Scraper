@@ -1,5 +1,4 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -8,7 +7,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 from lxml import html,etree
 import getpass
-import json, time, os, csv, pickle,argparse
+import json, time, os, csv, pickle,argparse,random
 from sys import exit
 
 
@@ -21,19 +20,40 @@ FRIENDS_HTML=os.getcwd() + '/' + "friends.html"
 DRIVER_NAME="chromedriver.exe"
 DRIVER_DIR=os.path.join(os.getcwd(),DRIVER_NAME)
 
+#element load timeout
 TIMEOUT = 5
+
+
+headers ={
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9", 
+    "Accept-Encoding": "gzip, deflate, br", 
+    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,ar;q=0.6", 
+    "Host": "httpbin.org", 
+    "Sec-Ch-Ua": "\"Google Chrome\";v=\"87\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"87\"", 
+    "Sec-Ch-Ua-Mobile": "?0", 
+    "Sec-Fetch-Dest": "document", 
+    "Sec-Fetch-Mode": "navigate", 
+    "Sec-Fetch-Site": "none", 
+    "Sec-Fetch-User": "?1", 
+    "Upgrade-Insecure-Requests": "1", 
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36", 
+    "X-Amzn-Trace-Id": "Root=1-6006dd63-4d1494383800f3186963da5c"
+  }
 
 
 def setup_driver(dir_driver):
     #webdriver options and config        
-    headers = {'User-Agent': 'Mozilla/5.0(compatible; Googlebot/2.1; +http://www.google.com/bot.html)'}
 
-    chrome_options = Options()
+    chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--window-size=1920x1080")
+    # chrome_options.add_argument("--headless")
 
-
+    #Add headers
+    for header in headers:
+        chrome_options.add_argument(f"{header}={headers[header]}")
+    
     driver = webdriver.Chrome(chrome_options=chrome_options)
 
     return driver
@@ -41,8 +61,14 @@ def setup_driver(dir_driver):
 def signin(driver):
     fb_login = input('enter your fb login: ') 
     fb_pass = getpass.getpass(prompt='enter your fb password: ') 
+    
     driver.get(MFACEBOOK_URL)
-    time.sleep(5)
+    
+    #Wait for inputs
+    WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'm_login_email')))
+    WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'm_login_password')))
+    WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.NAME, 'login')))
+
 
     email_id = driver.find_element_by_id("m_login_email")
     pass_id = driver.find_element_by_id("m_login_password")
@@ -55,7 +81,7 @@ def signin(driver):
     print("Logging in automatically...")
 
     time.sleep(5)
-    if driver.title =="Facebook - Log In or Sign Up":
+    if "Log" in driver.title:
         print("Login failed pls check your credentials and retry")
         return False
 
@@ -88,25 +114,36 @@ def get_friends_id(friends_html):
   
         yield({"friendName":friend_name,"friendId":friend_id})
 
-def get_work(parse):
+def get_work(driver, parse):
     friend_work = []
     xpath = '//*[@id="work"]/div[1]/div/div'
-    work_list = parse.xpath(xpath)
-    for i in range (1, len(work_list)+1):
-        try:
-            work = parse.xpath(xpath+'['+str(i)+']'+'/div/div[1]//a')[0].text
-            friend_work.append(work)
-        except:
-            pass
+    try:
+        work_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'work')))
+        work_list = parse.xpath(xpath)
+        for i in range (1, len(work_list)+1):
+                try:
+                    work = parse.xpath(xpath+'['+str(i)+']'+'/div/div[1]//a')[0].text
+                    friend_work.append(work)
+                except:
+                    pass
+    except TimeoutException:
+        print(f"Xpath work failed")
+
+    if friend_work==[]:
+        return False
+
     return ", ".join(friend_work)
 
-def get_current_city(parse):
+def get_current_city(driver, parse):
     current_city=""
     xpath = "//*[contains(text(),'Current ')]//following::td//a"
     try:
+        city_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'living')))
         current_city =parse.xpath(xpath)[0].text
-    except:
-        pass
+    except TimeoutException:
+        print(f"Xpath city failed")
+        return False
+
     return current_city
 
 def get_friend_info(driver,friend):
@@ -122,27 +159,18 @@ def get_friend_info(driver,friend):
 
     driver.get(FACEBOOK_PROFILE_URL+str(friendId))   
     source_page = html.fromstring(driver.page_source)
+    
+    work = get_work(driver, source_page)
+    current_city = get_current_city(driver, source_page)
 
-    try:
-        work_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'work')))
-        work = get_work(source_page)
+    #return false if no info in both section 
+    #it is either an error or just the user dont have data
+    if (work==False and current_city==False):
+        return False
+    else:
         infos["work"]=work
-
-    except TimeoutException:
-       pass
-    
-    try:
-        city_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'living')))
-        current_city = get_current_city(source_page)
         infos["current_city"]=current_city
-
-    except TimeoutException:
-        pass
- 
-
-   
-    
-    return(infos)
+        return(infos)
 
 
 def load_parsed_friends():
@@ -184,22 +212,27 @@ if __name__ == "__main__":
 
             try:
                 for friend in get_friends_id(FRIENDS_HTML):
-                    if not(friend["friendId"] in ids_to_skip):
-                        
-                        ids_to_skip.append(friend["friendId"])
-                        
-                        info=get_friend_info(driver,friend)
-                        writer.writerow(info)
+                    if not(friend["friendId"] in ids_to_skip):                        
                         print(f"\n>> Writing {friend['friendName']} 's infos \n (Ctrl+C to save your progress and exit)")
                         
-                        time.sleep(30)
+                        #if there is no data skip the user
+                        info=get_friend_info(driver,friend)
+                        if info != False:
+                            ids_to_skip.append(friend["friendId"])
+                            writer.writerow(info)
+                            print("Skipped!")
+                        
+                        #Generate random sleep time
+                        time.sleep(random.randint(10,30))
                 print(f"\n>> Completed! \n Saved to friendsInfo.csv")
 
             except (KeyboardInterrupt, EOFError):
                 print(">>Progress saved")
                 
             finally:
+                print("Terminated, check the csv file")
                 save_parsed_friends(ids_to_skip)
+                driver.close()
                 exit()
 
 

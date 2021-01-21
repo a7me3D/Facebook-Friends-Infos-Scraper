@@ -126,7 +126,8 @@ def get_work(driver, parse):
                     friend_work.append(work)
                 except:
                     pass
-    except TimeoutException:
+    #handle any error
+    except:
         print(f"Xpath work failed")
 
     if friend_work==[]:
@@ -140,7 +141,8 @@ def get_current_city(driver, parse):
     try:
         city_div = WebDriverWait(driver, TIMEOUT).until(EC.presence_of_element_located((By.ID, 'living')))
         current_city =parse.xpath(xpath)[0].text
-    except TimeoutException:
+    #handle any error
+    except:
         print(f"Xpath city failed")
         return False
 
